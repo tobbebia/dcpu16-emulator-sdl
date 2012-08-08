@@ -1,0 +1,37 @@
+; Assumes a LEM1802 is connected at slot 0
+
+SET A, 0
+SET B, videoram
+HWI 0
+
+SET A, 1
+SET B, fontdata
+HWI 0
+
+SET A, 2
+SET B, palettedata
+HWI 0
+
+:end
+SET PC, end
+
+:fontdata
+	DAT 0
+	DAT 0
+
+	; F character
+	DAT 65289
+	DAT 2304
+
+:palettedata
+	DAT 0
+
+	; Green color
+	DAT 240
+
+	; Red color
+	DAT 3840
+
+:videoram
+	DAT 4609
+	DAT 0

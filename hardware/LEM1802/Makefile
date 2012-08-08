@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-std=c99 -O3 -g -Wno-unused-result -I ../../ -c
+CFLAGS=-std=c99 -O3 -g -Wno-unused-result -I ../../include -c
 
 all: lem1802
 
