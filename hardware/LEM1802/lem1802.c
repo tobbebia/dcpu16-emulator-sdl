@@ -9,7 +9,7 @@ static int lem1802_interrupt(dcpu16_hardware_t *hardware)
 	// Read the A and B registers
 	DCPU16_WORD reg_a = lem->computer->registers[DCPU16_INDEX_REG_A];
 	DCPU16_WORD reg_b = lem->computer->registers[DCPU16_INDEX_REG_B];
-	
+
 	// Handle the interrupt
 	switch(reg_a) {
 	case LEM1802_INC_INT_MEM_MAP_SCREEN:

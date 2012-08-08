@@ -328,7 +328,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 						connected_hardware++;
 				}
 
-				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_A], connected_hardware);
+				dcpu16_set(computer, a_word, connected_hardware);
 			}
 
 			break;
@@ -337,7 +337,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			{
 				// Get the hardware index
-				DCPU16_WORD hardware_index = dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_A]);
+				DCPU16_WORD hardware_index = dcpu16_get(computer, a_word);
 				dcpu16_hardware_t * hardware = &computer->hardware[hardware_index];
 
 				// Set A, B, C, X, Y to information about the hardware
@@ -356,11 +356,12 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			
 			{
 				// Get the hardware index
-				DCPU16_WORD hardware_index = dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_A]);
+				DCPU16_WORD hardware_index = dcpu16_get(computer, a_word);
 				dcpu16_hardware_t * hardware = &computer->hardware[hardware_index];
 
 				// Interrupt
 				if(hardware->present && hardware->interrupt) {
+
 					cycles += hardware->interrupt(hardware);
 				}
 			}

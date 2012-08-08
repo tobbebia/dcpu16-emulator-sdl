@@ -33,5 +33,6 @@ SET PC, end
 	DAT 3840
 
 :videoram
+	DAT 0
 	DAT 4609
 	DAT 0
