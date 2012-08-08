@@ -1,0 +1,18 @@
+; Written for dcpu16-emulator project (https://github.com/tobbebia/dcpu16-emulator)
+; The purpose is to test the signed operations.
+
+SET A, 65531	; -5 using two's complement
+SET B, 7
+
+MLI B, A	; B should now contain -35 (0xFFDD)
+SET X, B	; Store in X
+
+DVI B, 2	; B should now contain -17 (rounded) (0xFFEF)
+SET Y, B	; Store in Y
+
+MDI B, 4	; B should still contain -17
+MDI B, -16	; B should contain -1 (0xFFFF)
+SET Z, B	; Store in Z
+
+end:
+	SET PC, end
