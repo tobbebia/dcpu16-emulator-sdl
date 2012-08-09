@@ -4,14 +4,6 @@ SET A, 0
 SET B, videoram
 HWI 0
 
-SET A, 1
-SET B, fontdata
-HWI 0
-
-SET A, 2
-SET B, palettedata
-HWI 0
-
 :end
 SET PC, end
 
@@ -33,6 +25,5 @@ SET PC, end
 	DAT 3840
 
 :videoram
-	DAT 0
-	DAT 4609
-	DAT 0
+	DAT 64833 
+

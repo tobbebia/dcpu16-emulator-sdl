@@ -19,9 +19,6 @@
 #define LEM1802_FONT_DATA_SIZE		256
 #define LEM1802_PALETTE_DATA_SIZE	16
 
-DCPU16_WORD lem1802_default_font[LEM1802_FONT_DATA_SIZE];
-DCPU16_WORD lem1802_default_palette[LEM1802_PALETTE_DATA_SIZE];
-
 typedef struct _LEM1802_t
 {
 	char connected;

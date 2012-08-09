@@ -2,7 +2,7 @@
 #include <string.h>
 #include "SDL/SDL.h"
 #include "dcpu16.h"
-#include "hardware/LEM1802/lem1802.h"
+#include "lem1802.h"
 
 const int scale = 4;
 const int borderThickness = 50;
@@ -162,11 +162,11 @@ void screen_update_func(void *arg)
 				SDL_FillRect(screen, &backgroundRect, backgroundColor);
 
 				// Draw the character pixels
-				unsigned int pixelData = font_data[character * 2] << 16 + font_data[character * 2 + 1];
-
+				unsigned int pixelData = font_data[character * 2] << 16 | font_data[character * 2 + 1];
+				int bit = 31;
 				for(int pixelX = 0; pixelX < 4; pixelX++) {
-					for(int pixelY = 0; pixelY < 8; pixelY++) {
-						if((pixelData >> (32 - (pixelX * 8 + pixelY))) & 1) {
+					for(int pixelY = 7; pixelY >= 0; pixelY--) {
+						if((pixelData >> bit) & 1) {
 							// Draw the pixel rect			
 							SDL_Rect pixelRect;
 							pixelRect.w = scale;
@@ -176,6 +176,8 @@ void screen_update_func(void *arg)
 
 							SDL_FillRect(screen, &pixelRect, foregroundColor); 
 						}
+
+						bit--;
 					}
 				}
 

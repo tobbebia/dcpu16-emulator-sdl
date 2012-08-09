@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sys/time.h>
 #include "dcpu16.h"
+#include "lem1802.h"
 
 #define __need_struct_timeval 1
 
