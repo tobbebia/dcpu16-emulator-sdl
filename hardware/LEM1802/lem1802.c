@@ -129,6 +129,7 @@ void lem1802_create(dcpu16_hardware_t *hardware, dcpu16_t *computer)
 	memset(lem, 0, sizeof(LEM1802_t));
 
 	lem->computer = computer;
+	lem->border_color = LEM1802_DEFAULT_BORDER_COLOR;
 
 	// Set the hardware structure
 	hardware->present = 1;

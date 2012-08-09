@@ -117,11 +117,16 @@ void screen_update_func(void *arg)
 	DCPU16_WORD palette_data[LEM1802_PALETTE_DATA_SIZE];
 
 	while(running) {
+		// Get the border color
+		unsigned int borderColor = SDL_MapRGB(screen->format, ((palette_data[lem1802->border_color & 0xF] >> 8) & 0xF) * 0xF,
+											((palette_data[lem1802->border_color & 0xF] >> 4) & 0xF) * 0xF,
+											(palette_data[lem1802->border_color & 0xF] & 0xF) * 0xF);
+
 		// Draw the border
-		SDL_FillRect(screen, &topBorder, SDL_MapRGB(screen->format, 0, 0, 0xFF));
-		SDL_FillRect(screen, &bottomBorder, SDL_MapRGB(screen->format, 0, 0, 0xFF));
-		SDL_FillRect(screen, &rightBorder, SDL_MapRGB(screen->format, 0, 0, 0xFF));
-		SDL_FillRect(screen, &leftBorder, SDL_MapRGB(screen->format, 0, 0, 0xFF));
+		SDL_FillRect(screen, &topBorder, borderColor);
+		SDL_FillRect(screen, &bottomBorder, borderColor);
+		SDL_FillRect(screen, &rightBorder, borderColor);
+		SDL_FillRect(screen, &leftBorder, borderColor);
 
 		// Refresh local data
 		lem1802_copy_video_ram(screen_device, video_ram);
