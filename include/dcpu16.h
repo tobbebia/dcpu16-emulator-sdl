@@ -173,6 +173,9 @@ typedef struct _dcpu16_t
 
 	// Mutex for accessing the interrupt queue
 	pthread_mutex_t interrupt_queue_mutex;
+
+	// Determines if the dcpu16 should be stopped or not
+	volatile char running;
 } dcpu16_t;
 
 /* Declaration of "public" functions */
@@ -181,7 +184,7 @@ void dcpu16_set(dcpu16_t *computer, DCPU16_WORD *where, DCPU16_WORD value);
 void dcpu16_init(dcpu16_t *computer);
 int dcpu16_load_ram(dcpu16_t *computer, const char *file, char binary);
 void dcpu16_run_debug(dcpu16_t *computer);
-void dcpu16_run(dcpu16_t *computer);
+void dcpu16_run(dcpu16_t *computer, unsigned int hertz);
 unsigned char dcpu16_step(dcpu16_t *computer);
 void dcpu16_dump_ram(dcpu16_t *computer, DCPU16_WORD start, DCPU16_WORD end);
 void dcpu16_print_registers(dcpu16_t *computer);

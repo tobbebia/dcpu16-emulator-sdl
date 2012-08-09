@@ -88,6 +88,9 @@ void hardware_release()
 
 void screen_update_func(void *arg)
 {
+	// SDL event for watching if the window is trying to be closed
+	SDL_Event event;
+
 	// Create the border rectangles
 	SDL_Rect topBorder, bottomBorder, rightBorder, leftBorder;
 	
@@ -117,6 +120,14 @@ void screen_update_func(void *arg)
 	DCPU16_WORD palette_data[LEM1802_PALETTE_DATA_SIZE];
 
 	while(running) {
+		// Check for SDL events		
+		if(SDL_PollEvent(&event)) {
+			if(event.type == SDL_QUIT) {
+				// Tell the emulator to stop running, but do not exit
+				computer->running = 0;
+			}
+		}
+
 		// Get the border color
 		unsigned int borderColor = SDL_MapRGB(screen->format, ((palette_data[lem1802->border_color & 0xF] >> 8) & 0xF) * 0xF,
 											((palette_data[lem1802->border_color & 0xF] >> 4) & 0xF) * 0xF,
@@ -241,7 +252,7 @@ int main(int argc, char *argv[])
 	if(debug_mode)
 		dcpu16_run_debug(computer);
 	else
-		dcpu16_run(computer);
+		dcpu16_run(computer, 1000000);
 
 	// Wait for the screen thread to finish
 	running = 0;

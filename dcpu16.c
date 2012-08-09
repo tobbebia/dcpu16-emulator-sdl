@@ -3,7 +3,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include "dcpu16.h"
-#include "lem1802.h"
 
 #define __need_struct_timeval 1
 
@@ -876,19 +875,47 @@ static void dcpu16_profiler_step(dcpu16_t *computer)
 	}
 }
 
-void dcpu16_run(dcpu16_t *computer)
+void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 {
+	computer->running = 1;
 	PRINTF("DCPU16 emulator now running\n");
 
-	/* Timo Fixme: This infinite loop detection is quite slow and interferes with performance profiling.  Turned it off for now. */
-	/* while(!(computer->ram[computer->registers[DCPU16_INDEX_REG_PC]] == (((0x20 + computer->registers[DCPU16_INDEX_REG_PC]) << 10) | 1) ||
-	 computer->ram[computer->registers[DCPU16_INDEX_REG_PC]] == 0x7DC1 && 
-	 computer->ram[(DCPU16_WORD)(computer->registers[DCPU16_INDEX_REG_PC] + 1)] == computer->registers[DCPU16_INDEX_REG_PC])) */
-	while(1) {
-		dcpu16_step(computer);
+	// Clock frequency capped?
+	char capped = 0;
+	unsigned int us_per_instruction = 0;
+	
+	if(hertz > 0) {
+		capped = 1;
+		us_per_instruction = (unsigned int) (1000000.0f / hertz);
+	} 
 
-		// Trigger interrupts
+	while(computer->running) {
+		// Get start time
+		struct timeval tv;
+		unsigned int start_time;
+		unsigned int end_time;
+
+		if(capped) {
+			gettimeofday(&tv, NULL);
+			start_time = (unsigned int) tv.tv_sec * 1000000 + tv.tv_usec;
+		}
+
+		// Step and trigger interrupts
+		dcpu16_step(computer);
 		dcpu16_trigger_interrupt(computer);
+
+		// Get end time
+		if(capped) {
+			gettimeofday(&tv, NULL);
+			end_time = (unsigned int) tv.tv_sec * 1000000 + tv.tv_usec;
+
+			// Sleep?
+			int to_sleep = us_per_instruction - (end_time - start_time);
+			
+			if(to_sleep > 0)
+				usleep(to_sleep);
+			
+		}
 
 		// Profiling
 		if (computer->profiling.enabled != 0)

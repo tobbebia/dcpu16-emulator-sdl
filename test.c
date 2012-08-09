@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
 	if(debug_mode)
 		dcpu16_run_debug(computer);
 	else
-		dcpu16_run(computer);
+		dcpu16_run(computer, 0);
 	
 	return 0;
 }
