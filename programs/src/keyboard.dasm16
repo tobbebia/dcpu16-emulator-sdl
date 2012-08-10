@@ -1,0 +1,44 @@
+; Tests keyboard and screen together
+
+SET SP, 0x9000
+
+; Setup interrupt handler
+IAS interrupt_handler
+
+; Setup screen
+SET A, 0
+SET B, 0x8000
+HWI 0
+
+; Setup keyboard
+SET A, 0
+HWI 1
+
+SET B, 0x1234
+SET A, 3
+HWI 1
+
+:end
+SET PC, end
+
+:interrupt_handler
+IFN A, 0x1234
+SET PC, return_from_interrupt
+
+; Find pressed key
+SET A, 1
+HWI 1
+
+; Key is in C
+IFE C, 0
+SET PC, return_from_interrupt
+
+; Display it
+AND C, 127
+SET A, 240
+SHL A, 8
+ADD A, C
+SET [0x8000], A
+
+:return_from_interrupt
+RFI

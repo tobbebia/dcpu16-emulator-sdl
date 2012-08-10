@@ -32,8 +32,8 @@
 typedef struct _keyboard_t
 {
 	// Key buffer, may only be accessed by one thread at a time
-	unsigned char buffer[KEYBOARD_BUFFER_SIZE];
-	unsigned int keys_in_buffer;
+	volatile DCPU16_WORD buffer[KEYBOARD_BUFFER_SIZE];
+	volatile unsigned int keys_in_buffer;
 	pthread_mutex_t buffer_mutex;
 
 	// Key state array

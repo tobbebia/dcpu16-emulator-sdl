@@ -166,9 +166,9 @@ typedef struct _dcpu16_t
 	dcpu16_hardware_t hardware[DCPU16_HARDWARE_SLOTS];
 
 	// Interrupt queue
-	dcpu16_queued_interrupt_t * interrupt_queue;
-	dcpu16_queued_interrupt_t * interrupt_queue_end;
-	unsigned short interrupt_queue_length;
+	dcpu16_queued_interrupt_t * volatile interrupt_queue;
+	dcpu16_queued_interrupt_t * volatile interrupt_queue_end;
+	volatile unsigned short interrupt_queue_length;
 	unsigned char trigger_interrupts;
 
 	// Mutex for accessing the interrupt queue

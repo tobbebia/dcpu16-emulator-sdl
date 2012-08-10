@@ -15,7 +15,7 @@ static int keyboard_interrupt(dcpu16_hardware_t *hardware)
 	case KEYBOARD_INC_INT_CLEAR_BUFFER:
 		pthread_mutex_lock(&keyboard->buffer_mutex);
 
-		memset(keyboard->buffer, 0, sizeof(keyboard->buffer));
+		memset((void *)keyboard->buffer, 0, sizeof(keyboard->buffer));
 		keyboard->keys_in_buffer = 0;
 
 		pthread_mutex_unlock(&keyboard->buffer_mutex);
@@ -25,15 +25,16 @@ static int keyboard_interrupt(dcpu16_hardware_t *hardware)
 
 		if(keyboard->keys_in_buffer > 0) {
 
+			keyboard->computer->registers[DCPU16_INDEX_REG_C] = keyboard->buffer[0];
 			keyboard->keys_in_buffer--;
 			
 			// Move rest of buffer
-			unsigned char tmp_buffer[KEYBOARD_BUFFER_SIZE];
-			memset(tmp_buffer, 0, sizeof(tmp_buffer));
-			memcpy(tmp_buffer, &keyboard->buffer[1], sizeof(keyboard->buffer) - sizeof(DCPU16_WORD));
+			DCPU16_WORD tmp_buffer[KEYBOARD_BUFFER_SIZE];
+			memset((void *)tmp_buffer, 0, sizeof(tmp_buffer));
+			memcpy((void *)tmp_buffer, (void *)&keyboard->buffer[1], sizeof(keyboard->buffer) - sizeof(DCPU16_WORD));
 
-			memset(keyboard->buffer, 0, sizeof(keyboard->buffer));
-			memcpy(keyboard->buffer, tmp_buffer, sizeof(keyboard->buffer));
+			memset((void *)keyboard->buffer, 0, sizeof(keyboard->buffer));
+			memcpy((void *)keyboard->buffer, (void *)tmp_buffer, sizeof(keyboard->buffer));
 
 		} else {
 			keyboard->computer->registers[DCPU16_INDEX_REG_C] = 0;

@@ -60,6 +60,7 @@ void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_int
 
 				computer->interrupt_queue_end->next = interrupt;
 				computer->interrupt_queue_end = interrupt;
+				computer->interrupt_queue_length++;
 			}
 		
 		} else {
@@ -69,6 +70,7 @@ void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_int
 
 			computer->interrupt_queue = interrupt;
 			computer->interrupt_queue_end = interrupt;
+			computer->interrupt_queue_length++;
 		}
 	}
 
@@ -79,52 +81,54 @@ void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_int
 /* Checks the queue and handles the interrupt if there is one. */
 void dcpu16_trigger_interrupt(dcpu16_t *computer) 
 {
-	// Lock the interrupt queue mutex
-	pthread_mutex_lock(&computer->interrupt_queue_mutex);
+	if(computer->trigger_interrupts) {
+		// Lock the interrupt queue mutex
+		pthread_mutex_lock(&computer->interrupt_queue_mutex);
 
-	if(computer->interrupt_queue) {
-		if(dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]) == 0) {
-			// Just remove the interrupt from the queue
-			dcpu16_queued_interrupt_t * to_remove = computer->interrupt_queue;
-			computer->interrupt_queue = to_remove->next;
+		if(computer->interrupt_queue) {
+			if(dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]) == 0) {
+				// Just remove the interrupt from the queue
+				dcpu16_queued_interrupt_t * to_remove = computer->interrupt_queue;
+				computer->interrupt_queue = to_remove->next;
 
-			// Free the removed interrupt
-			free(to_remove);
-			computer->interrupt_queue_length--;
-		} else {
-			// Remove the interrupt from the queue
-			dcpu16_queued_interrupt_t * to_remove = computer->interrupt_queue;
-			computer->interrupt_queue = to_remove->next;
+				// Free the removed interrupt
+				free(to_remove);
+				computer->interrupt_queue_length--;
+			} else {
+				// Remove the interrupt from the queue
+				dcpu16_queued_interrupt_t * to_remove = computer->interrupt_queue;
+				computer->interrupt_queue = to_remove->next;
 
-			// Push PC
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
-			dcpu16_set(computer, &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]], computer->registers[DCPU16_INDEX_REG_PC]);
+				// Push PC
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
+				dcpu16_set(computer, &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]], computer->registers[DCPU16_INDEX_REG_PC]);
 	
-			// Push A
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
-			dcpu16_set(computer, &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]], computer->registers[DCPU16_INDEX_REG_A]);
+				// Push A
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
+				dcpu16_set(computer, &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]], computer->registers[DCPU16_INDEX_REG_A]);
 
-			// Set PC to IA
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_PC], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]));
+				// Set PC to IA
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_PC], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]));
 
-			// Set A to the interrupt message
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_A], to_remove->message);
+				// Set A to the interrupt message
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_A], to_remove->message);
 
-			// Disable interrupt triggering until this interrupt returns
-			computer->trigger_interrupts = 0;
+				// Disable interrupt triggering until this interrupt returns
+				computer->trigger_interrupts = 0;
 
-			// PRINT
-			PRINTF("triggering interrupt, ia: %x, message: %x\n", computer->registers[DCPU16_INDEX_REG_IA], to_remove->message);
+				// PRINT
+				PRINTF("triggering interrupt, ia: %x, message: %x\n", computer->registers[DCPU16_INDEX_REG_IA], to_remove->message);
 
-			// Free the removed interrupt
-			free(to_remove);
-			computer->interrupt_queue_length--;
+				// Free the removed interrupt
+				free(to_remove);
+				computer->interrupt_queue_length--;
+			}
+
 		}
 
+		// Unock the interrupt queue mutex
+		pthread_mutex_unlock(&computer->interrupt_queue_mutex);
 	}
-
-	// Unock the interrupt queue mutex
-	pthread_mutex_unlock(&computer->interrupt_queue_mutex);
 }
 
 /* This function calls the register_changed callback for the PC register. */
@@ -741,6 +745,7 @@ void dcpu16_dump_ram(dcpu16_t *computer, DCPU16_WORD start, DCPU16_WORD end)
 void dcpu16_init(dcpu16_t *computer)
 {
 	memset(computer, 0 , sizeof(*computer));
+	computer->trigger_interrupts = 1;
 }
 
 /* Loads a program into the RAM, returns true on success.

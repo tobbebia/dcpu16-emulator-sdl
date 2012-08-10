@@ -47,6 +47,9 @@ int SDL_setup()
 		return -1;
 	}
 
+	// Needed to get ascii code from input
+	SDL_EnableUNICODE(1);
+
 	return 0;
 }
 
@@ -165,10 +168,9 @@ void loop_sdl(void *arg)
 					} else if(event.key.keysym.sym == SDLK_DELETE) {
 						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 1);
 						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_DELETE);
-					} else if(event.key.keysym.sym >= SDLK_a && event.key.keysym.sym <= SDLK_z) {
-						int dcpuScanCode = event.key.keysym.sym - SDLK_a + KEYBOARD_KEY_ASCII_START;
-						keyboard_update_key_state(keyboard_device, dcpuScanCode, 1);
-						keyboard_key_typed(keyboard_device, dcpuScanCode);
+					} else if(event.key.keysym.unicode > 0x20 && event.key.keysym.unicode <= 0x7F) {
+						keyboard_update_key_state(keyboard_device, event.key.keysym.unicode, 1);
+						keyboard_key_typed(keyboard_device, event.key.keysym.unicode);
 					} else if(event.key.keysym.sym == SDLK_UP) {
 						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_UP, 1);
 						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_ARROW_UP);
@@ -201,9 +203,8 @@ void loop_sdl(void *arg)
 						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_INSERT, 0);
 					} else if(event.key.keysym.sym == SDLK_DELETE) {
 						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 0);
-					} else if(event.key.keysym.sym >= SDLK_a && event.key.keysym.sym <= SDLK_z) {
-						int dcpuScanCode = event.key.keysym.sym - SDLK_a + KEYBOARD_KEY_ASCII_START;
-						keyboard_update_key_state(keyboard_device, dcpuScanCode, 0);
+					} else if(event.key.keysym.unicode > 0x20 && event.key.keysym.unicode <= 0x7F) {
+						keyboard_update_key_state(keyboard_device, event.key.keysym.unicode, 0);
 					} else if(event.key.keysym.sym == SDLK_UP) {
 						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_UP, 0);
 					} else if(event.key.keysym.sym == SDLK_DOWN) {
