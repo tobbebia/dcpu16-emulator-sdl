@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include "clock.h"
 
 static void * clock_thread(void * arg)
@@ -9,7 +8,7 @@ static void * clock_thread(void * arg)
 
 	while(clock->running) {
 		// Sleep
-		usleep(clock->interval);
+		usleep(clock->interval * 1000);
 		
 		// Increase tick count
 		clock->ticks++;
@@ -18,12 +17,9 @@ static void * clock_thread(void * arg)
 		if(clock->message) {
 			dcpu16_interrupt(clock->computer, clock->message, 0);
 		}
-
-		// TODO:
-		// Some kind of sleep mechanism here, to not slow down the host computer
-		// Interrupt the DCPU16 at every tick if clock->message is not 0, message is clock->message
-		// Also increase clock->ticks at every tick
 	}
+
+	pthread_exit(0);
 }
 
 static int clock_interrupt(dcpu16_hardware_t *hardware)
@@ -75,6 +71,9 @@ void clock_create(dcpu16_hardware_t *hardware, dcpu16_t *computer)
 	hardware->hardware_manufacturer = CLOCK_MANUFACTURER;
 	hardware->interrupt = clock_interrupt;
 	hardware->custom_struct = (void *) clock;
+
+	// Start the thread
+	pthread_create(&clock->thread, 0, (void *) &clock_thread, (void *) clock);
 }
 
 void clock_destroy(dcpu16_hardware_t *hardware)

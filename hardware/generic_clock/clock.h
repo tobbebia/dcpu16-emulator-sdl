@@ -18,7 +18,7 @@ typedef struct _generic_clock_t
 	DCPU16_WORD ticks;
 	unsigned int interval;	// Milliseconds
 
-	char running;
+	volatile char running;
 	pthread_t thread;
 
 	dcpu16_t *computer;

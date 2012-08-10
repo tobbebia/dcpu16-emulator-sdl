@@ -3,6 +3,8 @@
 #include "SDL/SDL.h"
 #include "dcpu16.h"
 #include "lem1802.h"
+#include "keyboard.h"
+#include "clock.h"
 
 const int scale = 4;
 const int borderThickness = 50;
@@ -14,7 +16,7 @@ volatile char running = 1;
 
 // SDL
 SDL_Surface *screen;
-pthread_t screen_update_thread;
+pthread_t sdl_loop_thread;
 
 // Emulator
 dcpu16_t computerInRAM;
@@ -23,6 +25,9 @@ dcpu16_t *computer = &computerInRAM;
 // Hardware
 dcpu16_hardware_t *screen_device;
 LEM1802_t *lem1802;
+
+dcpu16_hardware_t *keyboard_device;
+dcpu16_hardware_t *clock_device;
 
 int SDL_setup()
 {
@@ -72,10 +77,18 @@ int hardware_setup()
 {
 	// Point the hardware to device slots
 	screen_device = &computer->hardware[0];
+	keyboard_device = &computer->hardware[1];
+	clock_device = &computer->hardware[2];
 
 	// Create the LEM1802 device
 	lem1802_create(screen_device, computer);
 	lem1802 = (LEM1802_t *) screen_device->custom_struct;
+
+	// Create the keyboard device
+	keyboard_create(keyboard_device, computer);
+
+	// Create the clock device
+	clock_create(clock_device, computer);
 
 	return 0;
 }
@@ -84,9 +97,15 @@ void hardware_release()
 {
 	// Release screen device
 	lem1802_destroy(screen_device);
+
+	// Release keyboard device
+	keyboard_destroy(keyboard_device);
+
+	// Release clock device
+	clock_destroy(clock_device);
 }
 
-void screen_update_func(void *arg)
+void loop_sdl(void *arg)
 {
 	// SDL event for watching if the window is trying to be closed
 	SDL_Event event;
@@ -120,13 +139,98 @@ void screen_update_func(void *arg)
 	DCPU16_WORD palette_data[LEM1802_PALETTE_DATA_SIZE];
 
 	while(running) {
+		char sendInterrupt = 0;
+
 		// Check for SDL events		
-		if(SDL_PollEvent(&event)) {
+		while(SDL_PollEvent(&event)) {
 			if(event.type == SDL_QUIT) {
 				// Tell the emulator to stop running, but do not exit
 				computer->running = 0;
+				continue;
 			}
+
+			char eventHappened = 1;
+
+			switch(event.type) {
+				case SDL_KEYDOWN:
+					if(event.key.keysym.sym == SDLK_BACKSPACE) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_BACKSPACE, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_BACKSPACE);
+					} else if(event.key.keysym.sym == SDLK_RETURN) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_RETURN, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_RETURN);
+					} else if(event.key.keysym.sym == SDLK_INSERT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_INSERT, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_INSERT);
+					} else if(event.key.keysym.sym == SDLK_DELETE) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_DELETE);
+					} else if(event.key.keysym.sym >= SDLK_a && event.key.keysym.sym <= SDLK_z) {
+						int dcpuScanCode = event.key.keysym.sym - SDLK_a + KEYBOARD_KEY_ASCII_START;
+						keyboard_update_key_state(keyboard_device, dcpuScanCode, 1);
+						keyboard_key_typed(keyboard_device, dcpuScanCode);
+					} else if(event.key.keysym.sym == SDLK_UP) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_UP, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_ARROW_UP);
+					} else if(event.key.keysym.sym == SDLK_DOWN) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_DOWN, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_ARROW_DOWN);
+					} else if(event.key.keysym.sym == SDLK_LEFT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_LEFT, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_ARROW_LEFT);
+					} else if(event.key.keysym.sym == SDLK_RIGHT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_RIGHT, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_ARROW_RIGHT);
+					} else if(event.key.keysym.sym == SDLK_LSHIFT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_SHIFT, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_SHIFT);
+					} else if(event.key.keysym.sym == SDLK_LCTRL) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_CONTROL, 1);
+						keyboard_key_typed(keyboard_device, KEYBOARD_KEY_CONTROL);
+					} else {
+						eventHappened = 0;
+					}
+
+					break;
+				case SDL_KEYUP:
+					if(event.key.keysym.sym == SDLK_BACKSPACE) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_BACKSPACE, 0);
+					} else if(event.key.keysym.sym == SDLK_RETURN) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_RETURN, 0);
+					} else if(event.key.keysym.sym == SDLK_INSERT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_INSERT, 0);
+					} else if(event.key.keysym.sym == SDLK_DELETE) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 0);
+					} else if(event.key.keysym.sym >= SDLK_a && event.key.keysym.sym <= SDLK_z) {
+						int dcpuScanCode = event.key.keysym.sym - SDLK_a + KEYBOARD_KEY_ASCII_START;
+						keyboard_update_key_state(keyboard_device, dcpuScanCode, 0);
+					} else if(event.key.keysym.sym == SDLK_UP) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_UP, 0);
+					} else if(event.key.keysym.sym == SDLK_DOWN) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_DOWN, 0);
+					} else if(event.key.keysym.sym == SDLK_LEFT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_LEFT, 0);
+					} else if(event.key.keysym.sym == SDLK_RIGHT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_RIGHT, 0);
+					} else if(event.key.keysym.sym == SDLK_LSHIFT) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_SHIFT, 0);
+					} else if(event.key.keysym.sym == SDLK_LCTRL) {
+						keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_CONTROL, 0);
+					} else {
+						eventHappened = 0;
+					}
+
+					break;
+				default:
+					eventHappened = 0;
+			};
+
+			if(eventHappened)
+				sendInterrupt = 1;
 		}
+
+		if(sendInterrupt)
+			keyboard_throw_interrupt(keyboard_device);
 
 		// Get the border color
 		unsigned int borderColor = SDL_MapRGB(screen->format, ((palette_data[lem1802->border_color & 0xF] >> 8) & 0xF) * 0xF,
@@ -246,7 +350,7 @@ int main(int argc, char *argv[])
 	hardware_setup();
 
 	// Start the screen thread
-	pthread_create(&screen_update_thread, 0, (void *) &screen_update_func, 0);
+	pthread_create(&sdl_loop_thread, 0, (void *) &loop_sdl, 0);
 
 	// Start the emulator
 	if(debug_mode)
@@ -256,7 +360,7 @@ int main(int argc, char *argv[])
 
 	// Wait for the screen thread to finish
 	running = 0;
-	pthread_join(screen_update_thread, 0);
+	pthread_join(sdl_loop_thread, 0);
 
 	// Cleanup
 	hardware_release();

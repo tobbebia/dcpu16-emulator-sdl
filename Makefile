@@ -4,13 +4,13 @@ CFLAGS=-std=c99 -O3 -g -Wno-unused-result -Iinclude
 
 # Hardware modules path
 generic_clock		= hardware/generic_clock/clock.o
-generic_keyboard	= 
+generic_keyboard	= hardware/generic_keyboard/keyboard.o
 LEM1802			= hardware/LEM1802/lem1802.o
 SPC200			=
 
 # Variables to edit if you are making your own project based on this emulator core
 MAIN=main.c
-HARDWARE=$(LEM1802)
+HARDWARE=$(LEM1802) $(generic_keyboard) $(generic_clock)
 ADDITIONAL_CFILES=
 ADDITIONAL_CFLAGS=
 ADDITIONAL_LIBS=-lSDL
