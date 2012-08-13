@@ -100,7 +100,7 @@ void lem1802_copy_font_data(dcpu16_hardware_t *hardware, DCPU16_WORD * destinati
 			memcpy(destination, &lem->computer->ram[0], (LEM1802_FONT_DATA_SIZE - (DCPU16_RAM_SIZE - LEM1802_FONT_DATA_SIZE)) * 2);
 		}
 	} else {
-		memcpy(destination, lem1802_default_font, LEM1802_FONT_DATA_SIZE * 2);
+		memcpy(destination, lem1802_default_font, sizeof(lem1802_default_font));
 	}
 }
 
@@ -118,7 +118,7 @@ void lem1802_copy_palette_data(dcpu16_hardware_t *hardware, DCPU16_WORD * destin
 			memcpy(destination, &lem->computer->ram[0], (LEM1802_PALETTE_DATA_SIZE - (DCPU16_RAM_SIZE - LEM1802_PALETTE_DATA_SIZE)) * 2);
 		}
 	} else {
-		memcpy(destination, lem1802_default_palette, LEM1802_PALETTE_DATA_SIZE * 2);
+		memcpy(destination, lem1802_default_palette, sizeof(lem1802_default_palette));
 	}
 }
 
