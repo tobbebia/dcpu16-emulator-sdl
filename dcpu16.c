@@ -230,7 +230,7 @@ static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 
 	// Parse the instruction but don't execute it
 	DCPU16_WORD w = computer->ram[computer->registers[DCPU16_INDEX_REG_PC]];
-	char opcode = w & 0xF;
+	char opcode = w & 0x1F;
 	computer->registers[DCPU16_INDEX_REG_PC]++;
 
 	// Call the PC callback
@@ -252,6 +252,7 @@ static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 	}
 
 	if(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU) {
+
 		extra_cycles += 1;
 		extra_cycles += dcpu16_skip_next_instruction(computer);
 	}
