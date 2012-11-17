@@ -224,12 +224,17 @@ static inline char dcpu16_is_literal(char v)
 }
 
 /* Skips the next instruction (advances PC). */
-static void dcpu16_skip_next_instruction(dcpu16_t *computer)
+static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 {
+	int extra_cycles = 0;
+
 	// Parse the instruction but don't execute it
 	DCPU16_WORD w = computer->ram[computer->registers[DCPU16_INDEX_REG_PC]];
 	char opcode = w & 0xF;
 	computer->registers[DCPU16_INDEX_REG_PC]++;
+
+	// Call the PC callback
+	dcpu16_pc_callback(computer);
 
 	if(opcode != DCPU16_OPCODE_NON_BASIC) {
 		char a = (w >> 5) & 0x1F;
@@ -246,8 +251,12 @@ static void dcpu16_skip_next_instruction(dcpu16_t *computer)
 		dcpu16_get_pointer(computer, a, 0, &a_word, 1);
 	}
 
-	// Call the PC callback
-	dcpu16_pc_callback(computer);
+	if(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU) {
+		extra_cycles += 1;
+		extra_cycles += dcpu16_skip_next_instruction(computer);
+	}
+
+	return extra_cycles;
 }
 
 /* Executes the next instruction, returns the number of cycles used. */
@@ -566,7 +575,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if(dcpu16_get(computer, a_word) & dcpu16_get(computer, b_word) == 0)
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -576,7 +585,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if(dcpu16_get(computer, a_word) & dcpu16_get(computer, b_word) != 0)
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -586,7 +595,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			
 			if(dcpu16_get(computer, a_word) != dcpu16_get(computer, b_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -596,7 +605,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if(dcpu16_get(computer, a_word) == dcpu16_get(computer, b_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -606,7 +615,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if(dcpu16_get(computer, b_word) <= dcpu16_get(computer, a_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -616,7 +625,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if((DCPU16_WORD_SIGNED) dcpu16_get(computer, b_word) <= (DCPU16_WORD_SIGNED)dcpu16_get(computer, a_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -626,7 +635,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if(dcpu16_get(computer, b_word) >= dcpu16_get(computer, a_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
@@ -636,7 +645,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 			if((DCPU16_WORD_SIGNED) dcpu16_get(computer, b_word) >= (DCPU16_WORD_SIGNED)dcpu16_get(computer, a_word))
 			{
-				dcpu16_skip_next_instruction(computer);
+				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
 
