@@ -1,0 +1,124 @@
+    ; --------------------------------------------
+    ; Title: Timer
+    ; Author: Lacker
+    ; .date:    15/10/2012
+    ; Version: 1.1
+    ; --------------------------------------------
+     
+    ;---------------
+    ;Hardware Detect
+    ;---------------
+     
+.globl startup
+:startup
+
+    JSR hardware_detect
+     
+    :end
+    SET PC, end
+     
+    :hardware_detect
+    SET J, 0xFFFF
+    HWN I
+    :HW_loop
+    ADD J, 1
+    IFE J, I
+        SET PC, setting_vram
+    HWQ J
+    IFE A, 0xF615
+        SET [display_address], J
+      IFE A, 0x7406
+        SET [keyboard_address], J
+    IFE A, 0xB402
+        SET [clock_address], J
+    SET PC, HW_loop
+     
+    :setting_vram
+    SET A, 0
+    SET B, 0x8000
+    HWI [display_address]
+    SET [0x8000], 0xF030
+    SET [0x8001], 0xF030
+    SET [0x8002], 0xF03A
+    SET [0x8003], 0xF030
+    SET [0x8004], 0xF030
+    SET [0x8005], 0xF03A
+    SET [0x8006], 0xF030
+    SET [0x8007], 0xF030
+     
+     
+     
+    :get_the_clock_working
+    SET A, 0 ;Interrupt to start ticking
+    SET B, 60 ; b/60th second
+    HWI [clock_address] ;Send clock interrupt
+    SET A, 2 ;interrupt to send message
+    SET B, [clock_interrupt_message];Message to send
+    HWI [clock_address] ;Send clock interrupt
+    IAS clock_interrupt_handler
+    SET pc, end
+     
+    ;Handle the clock interrupt
+    :clock_interrupt_handler
+    IFN A, [clock_interrupt_message]
+        RFI 0
+    JSR Seconds
+    RFI 0
+     
+    :Seconds
+    IFE [0x8001], 0xF039       ;If "H_low" is 9 and Minutes are 59 and blablabla add 1 to "H_high"
+        IFE [0x8003], 0xF035      
+            IFE [0x8004], 0xF039
+                IFE [0x8006], 0xF035
+                    IFE [0x8007], 0xF039
+                        ADD [0x8000], 0x0001
+    IFE [0x8001], 0xF039       ;If "H_low" is 9 and Minutes are 59 and blablabla turn "H_low" 0
+        IFE [0x8003], 0xF035      
+            IFE [0x8004], 0xF039
+                IFE [0x8006], 0xF035
+                    IFE [0x8007], 0xF039
+                        SET [0x8001], 0xF02F
+    IFE [0x8003], 0xF035       ;If Minutes are 59 add 1 to "H_low"
+        IFE [0x8004], 0xF039
+            IFE [0x8006], 0xF035
+                IFE [0x8007], 0xF039
+                    ADD [0x8001], 0x0001
+    IFE [0x8003], 0xF035       ;If Minutes are 59 turn "M_high" 0
+        IFE [0x8004], 0xF039
+            IFE [0x8006], 0xF035
+                IFE [0x8007], 0xF039
+                    SET [0x8003], 0xF02F
+    IFE [0x8004], 0xF039       ;If "M_low" is 9 and Seconds are 59 add 1 to "M_high"
+        IFE [0x8006], 0xF035
+            IFE [0x8007], 0xF039
+                ADD [0x8003], 0x0001
+    IFE [0x8004], 0xF039       ;If "M_low" is 9 and Seconds are 59 turn "M_low" 0
+        IFE [0x8006], 0xF035
+            IFE [0x8007], 0xF039
+                SET [0x8004], 0xF02F
+    IFE [0x8006], 0xF035       ;If "S_high" is 5 and "S_low" is 9 add 1 to "M_low"
+        IFE [0x8007], 0xF039
+            ADD [0x8004], 0x0001
+    IFE [0x8006], 0xF035       ;If "S_high" is 5 and "S_low" is 9 turn "S_high" 0
+        IFE [0x8007], 0xF039
+            SET [0x8006], 0xF02F
+    IFE [0x8007], 0xF039       ;If S_low is 9 add 1 to "S_high"
+        ADD [0x8006], 0x0001    
+    IFE [0x8007], 0xF039       ;If S_low is 9 turn it 0 again
+        SET [0x8007], 0xF02F   ;In order to get the algorythm easyer when the timer restarts any of the values it adds one to everyone of the others, it resets to 0xF02F and not 0xF030 because of this
+    ADD [0x8007], 0x0001       ;"S_low"
+    SET PC, POP
+     
+     
+    :clock_interrupt_message
+    .dat 0x0001
+     
+    :display_address
+    .dat 0
+     
+    :keyboard_address
+    .dat 0
+     
+    :clock_address
+    .dat 0
+
