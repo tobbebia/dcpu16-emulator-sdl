@@ -131,6 +131,10 @@ void lem1802_create(dcpu16_hardware_t *hardware, dcpu16_t *computer)
 	lem->computer = computer;
 	lem->border_color = LEM1802_DEFAULT_BORDER_COLOR;
 
+	// Set default vid ram address
+	lem->video_ram_address = 0x8000;
+	lem->connected = 1;
+
 	// Set the hardware structure
 	hardware->present = 1;
 	hardware->hardware_id = LEM1802_ID;
