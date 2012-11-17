@@ -148,7 +148,7 @@ static inline DCPU16_WORD *dcpu16_register_pointer(dcpu16_t *computer, char inde
 }
 
 /* Sets *retval to point to a register or a DCPU16_WORD in RAM. Returns the number of cycles it took to look it up. */
-static unsigned char dcpu16_get_pointer(dcpu16_t *computer, unsigned char where, DCPU16_WORD *tmp_storage, DCPU16_WORD **retval, char is_a)
+static unsigned char dcpu16_get_pointer(dcpu16_t *computer, unsigned char where, DCPU16_WORD *tmp_storage, DCPU16_WORD **retval, char is_a, char to_be_skipped)
 {
 	if(where <= DCPU16_AB_VALUE_REG_J) {
 		// 0x00-0x07 (value of register)
@@ -177,9 +177,13 @@ static unsigned char dcpu16_get_pointer(dcpu16_t *computer, unsigned char where,
 	case DCPU16_AB_VALUE_PUSH_OR_POP:
 		if(is_a) {
 			*retval = &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]];
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) + 1);
+
+			if(!to_be_skipped)
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) + 1);
+			
 		} else {
-			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
+			if(!to_be_skipped)
+				dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
 			*retval = &computer->ram[computer->registers[DCPU16_INDEX_REG_SP]];
 		}
 
@@ -242,13 +246,13 @@ static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 
 		DCPU16_WORD *b_word;
 		DCPU16_WORD *a_word;
-		dcpu16_get_pointer(computer, a, 0, &a_word, 1);
-		dcpu16_get_pointer(computer, b, 0, &b_word, 0);
+		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
+		dcpu16_get_pointer(computer, b, 0, &b_word, 0, 1);
 	} else {
 		char a = (w >> 10) & 0x3F;
 
 		DCPU16_WORD *a_word;
-		dcpu16_get_pointer(computer, a, 0, &a_word, 1);
+		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
 	}
 
 	if(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU) {
@@ -282,7 +286,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 		// Get pointer to A
 		DCPU16_WORD *a_word;
-		cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1);
+		cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1, 0);
 
 		switch(o) {
 		case DCPU16_NON_BASIC_OPCODE_RESERVED_0:
@@ -290,11 +294,12 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			break;
 		case DCPU16_NON_BASIC_OPCODE_JSR_A:
 			cycles += 3;
+			
+			DCPU16_WORD new_pc = dcpu16_get(computer, a_word);
 
 			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
 			computer->ram[computer->registers[DCPU16_INDEX_REG_SP]] = computer->registers[DCPU16_INDEX_REG_PC];
-
-			computer->registers[DCPU16_INDEX_REG_PC] = dcpu16_get(computer, a_word);	
+			computer->registers[DCPU16_INDEX_REG_PC] = new_pc;	
 
 			break;
 		case DCPU16_NON_BASIC_OPCODE_INT:
@@ -395,8 +400,8 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		// Get pointer to A and B
 		DCPU16_WORD *a_word;
 		DCPU16_WORD *b_word;
-		cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1);
-		cycles += dcpu16_get_pointer(computer, b, &b_literal_tmp, &b_word, 0);
+		cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1, 0);
+		cycles += dcpu16_get_pointer(computer, b, &b_literal_tmp, &b_word, 0, 0);
 
 		// Give up if illegal instruction detected (trying set a literal value)
 		char b_literal = dcpu16_is_literal(b);
@@ -593,7 +598,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			break;
 		case DCPU16_OPCODE_IFE:
 			cycles += 2;
-			
+
 			if(dcpu16_get(computer, a_word) != dcpu16_get(computer, b_word))
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
