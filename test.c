@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
 	// Command line arguments
 	char *ram_file 	= 0;
 	char binary_ram_file 	= 0;
+	char little_endian	= 0;
 	char debug_mode 	= 0;
 	char enable_profiling 	= 0;
 	
@@ -20,8 +21,12 @@ int main(int argc, char *argv[])
 	for(int c = 1; c < argc; c++) {
 		if(strcmp(argv[c], "-d") == 0) {
 			debug_mode = 1;
-		} else if(strcmp(argv[c], "-b") == 0) {
+		} else if(strcmp(argv[c], "-bl") == 0) {
 			binary_ram_file = 1;
+			little_endian = 1;
+		} else if(strcmp(argv[c], "-bb") == 0) {
+			binary_ram_file = 1;
+			little_endian = 0;
 		} else if(strcmp(argv[c], "-p") == 0) {
 			enable_profiling = 1;
 		} else {
@@ -31,7 +36,7 @@ int main(int argc, char *argv[])
 
 	// Load RAM file
 	if(ram_file) {
-		if(!dcpu16_load_ram(computer, ram_file, binary_ram_file)) {
+		if(!dcpu16_load_ram(computer, ram_file, binary_ram_file, little_endian)) {
 			PRINTF("Couldn't load RAM file (too large or bad file).\n");
 			return 0;
 		}

@@ -12,7 +12,8 @@ Terminal 'dcpu16 parameters ram_file'.
 
 	PARAMETERS:
 		-d	debug mode (let's you step through the instructions)
-		-b	ram file is in binary format with little endian words
+		-bl	ram file is in binary format with little endian words
+		-bb	ram file is in binary format with big endian words
 		-p	enable profiling
 		<file>	file which gets loaded to ram
 

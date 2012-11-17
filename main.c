@@ -54,13 +54,13 @@ int SDL_setup()
 	return 0;
 }
 
-int emulator_setup(char * ram_file, char binary, char enable_profiling)
+int emulator_setup(char * ram_file, char binary, char little_endian, char enable_profiling)
 {
 	// Create the DCPU16 virtual computer
 	dcpu16_init(computer);
 
 	// Load the RAM file
-	if(!dcpu16_load_ram(computer, ram_file, binary)) {
+	if(!dcpu16_load_ram(computer, ram_file, binary, little_endian)) {
 		PRINTF("Couldn't load RAM file (too large or bad file).\n");
 		return -1;
 	}
@@ -332,6 +332,7 @@ int main(int argc, char *argv[])
 	// Command line arguments
 	char *ram_file 		= 0;
 	char binary 		= 0;
+	char little_endian	= 0;
 	char debug_mode 	= 0;
 	char enable_profiling 	= 0;
 	
@@ -339,8 +340,12 @@ int main(int argc, char *argv[])
 	for(int c = 1; c < argc; c++) {
 		if(strcmp(argv[c], "-d") == 0) {
 			debug_mode = 1;
-		} else if(strcmp(argv[c], "-b") == 0) {
+		} else if(strcmp(argv[c], "-bl") == 0) {
 			binary = 1;
+			little_endian = 1;
+		} else if(strcmp(argv[c], "-bb") == 0) {
+			binary = 1;
+			little_endian = 0;
 		} else if(strcmp(argv[c], "-p") == 0) {
 			enable_profiling = 1;
 		} else {
@@ -351,7 +356,7 @@ int main(int argc, char *argv[])
 	// Make sure the user specified a RAM file
 	if(ram_file) {
 		// Prepare the emulator
-		if(emulator_setup(ram_file, binary, enable_profiling) != 0)
+		if(emulator_setup(ram_file, binary, little_endian, enable_profiling) != 0)
 			return -1;
 	} else {
 		PRINTF("No RAM file specified.\n");

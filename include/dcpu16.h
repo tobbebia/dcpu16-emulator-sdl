@@ -183,7 +183,7 @@ typedef struct _dcpu16_t
 void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_interrupt);
 void dcpu16_set(dcpu16_t *computer, DCPU16_WORD *where, DCPU16_WORD value);
 void dcpu16_init(dcpu16_t *computer);
-int dcpu16_load_ram(dcpu16_t *computer, const char *file, char binary);
+int dcpu16_load_ram(dcpu16_t *computer, const char *file, char binary, char little_endian);
 void dcpu16_run_debug(dcpu16_t *computer);
 void dcpu16_run(dcpu16_t *computer, unsigned int hertz);
 unsigned char dcpu16_step(dcpu16_t *computer);
