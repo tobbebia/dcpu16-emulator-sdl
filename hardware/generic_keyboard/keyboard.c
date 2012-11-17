@@ -21,8 +21,6 @@ static int keyboard_interrupt(dcpu16_hardware_t *hardware)
 		pthread_mutex_unlock(&keyboard->buffer_mutex);
 		break;
 	case KEYBOARD_INC_INT_NEXT_KEY:
-		printf("NEXT KEY\n");
-
 		pthread_mutex_lock(&keyboard->buffer_mutex);
 
 		if(keyboard->keys_in_buffer > 0) {
@@ -38,9 +36,7 @@ static int keyboard_interrupt(dcpu16_hardware_t *hardware)
 			memset((void *)keyboard->buffer, 0, sizeof(keyboard->buffer));
 			memcpy((void *)keyboard->buffer, (void *)tmp_buffer, sizeof(keyboard->buffer));
 
-		printf("C Set to %i \n", keyboard->computer->registers[DCPU16_INDEX_REG_C]);
 		} else {
-			printf("no key in buffer\n");
 			keyboard->computer->registers[DCPU16_INDEX_REG_C] = 0;
 		}
 

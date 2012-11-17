@@ -226,29 +226,25 @@ static inline char dcpu16_is_literal(char v)
 /* Skips the next instruction (advances PC). */
 static void dcpu16_skip_next_instruction(dcpu16_t *computer)
 {
-	char opcode = 0;
-	
-	do {
-		// Parse the instruction but don't execute it
-		DCPU16_WORD w = computer->ram[computer->registers[DCPU16_INDEX_REG_PC]];
-		opcode = w & 0x1F;
-		computer->registers[DCPU16_INDEX_REG_PC]++;
+	// Parse the instruction but don't execute it
+	DCPU16_WORD w = computer->ram[computer->registers[DCPU16_INDEX_REG_PC]];
+	char opcode = w & 0xF;
+	computer->registers[DCPU16_INDEX_REG_PC]++;
 
-		if(opcode != DCPU16_OPCODE_NON_BASIC) {
-			char a = (w >> 5) & 0x1F;
-			char b = (w >> 10) & 0x3F;
+	if(opcode != DCPU16_OPCODE_NON_BASIC) {
+		char a = (w >> 5) & 0x1F;
+		char b = (w >> 10) & 0x3F;
 
-			DCPU16_WORD *b_word;
-			DCPU16_WORD *a_word;
-			dcpu16_get_pointer(computer, a, 0, &a_word, 1);
-			dcpu16_get_pointer(computer, b, 0, &b_word, 0);
-		} else {
-			char a = (w >> 10) & 0x3F;
+		DCPU16_WORD *b_word;
+		DCPU16_WORD *a_word;
+		dcpu16_get_pointer(computer, a, 0, &a_word, 1);
+		dcpu16_get_pointer(computer, b, 0, &b_word, 0);
+	} else {
+		char a = (w >> 10) & 0x3F;
 
-			DCPU16_WORD *a_word;
-			dcpu16_get_pointer(computer, a, 0, &a_word, 1);
-		}
-	} while(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU);
+		DCPU16_WORD *a_word;
+		dcpu16_get_pointer(computer, a, 0, &a_word, 1);
+	}
 
 	// Call the PC callback
 	dcpu16_pc_callback(computer);
@@ -285,11 +281,10 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		case DCPU16_NON_BASIC_OPCODE_JSR_A:
 			cycles += 3;
 
-			DCPU16_WORD function_address = dcpu16_get(computer, a_word);
 			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_SP], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_SP]) - 1);
 			computer->ram[computer->registers[DCPU16_INDEX_REG_SP]] = computer->registers[DCPU16_INDEX_REG_PC];
 
-			computer->registers[DCPU16_INDEX_REG_PC] = function_address;
+			computer->registers[DCPU16_INDEX_REG_PC] = dcpu16_get(computer, a_word);	
 
 			break;
 		case DCPU16_NON_BASIC_OPCODE_INT:
@@ -370,7 +365,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 
 				// Interrupt
 				if(hardware->present && hardware->interrupt) {
-
+					hardware->received_initial_hwi = 1;
 					cycles += hardware->interrupt(hardware);
 				}
 			}
@@ -818,7 +813,6 @@ static char dcpu16_explore_state(dcpu16_t *computer)
 
 		PRINTF("\nRAM dump start address (hex): 0x");
 		scanf("%hx", &d_start);
-		
 		PRINTF("RAM dump end address (hex): 0x");
 		scanf("%hx", &d_end);
 

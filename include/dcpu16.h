@@ -130,6 +130,7 @@ typedef signed short DCPU16_WORD_SIGNED;
 typedef struct _dcpu16_hardware_t
 {
 	char present;
+	char received_initial_hwi;
 	unsigned int hardware_id;
 	unsigned short hardware_version;
 	unsigned int hardware_manufacturer;
