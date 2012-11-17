@@ -40,16 +40,19 @@ static int clock_interrupt(dcpu16_hardware_t *hardware)
 
 			if(!clock->running) {
 				// Start the clock thread
-				pthread_create(&clock->thread, 0, clock_thread, (void *) clock);
+				clock->running = 1;
+				pthread_create(&clock->thread, 0, (void *) &clock_thread, (void *) clock);
 			}
 		}
 
 		break;
 	case CLOCK_INC_INT_1:
-		dcpu16_set(clock->computer, &clock->computer->registers[DCPU16_INDEX_REG_C], clock->ticks);
+		dcpu16_set(clock->computer, &clock->computer->registers[DCPU16_INDEX_REG_C], clock->ticks);	
+
 		break;
 	case CLOCK_INC_INT_2:
 		clock->message = reg_b;
+
 		break;
 	};
 
@@ -71,9 +74,6 @@ void clock_create(dcpu16_hardware_t *hardware, dcpu16_t *computer)
 	hardware->hardware_manufacturer = CLOCK_MANUFACTURER;
 	hardware->interrupt = clock_interrupt;
 	hardware->custom_struct = (void *) clock;
-
-	// Start the thread
-	pthread_create(&clock->thread, 0, (void *) &clock_thread, (void *) clock);
 }
 
 void clock_destroy(dcpu16_hardware_t *hardware)

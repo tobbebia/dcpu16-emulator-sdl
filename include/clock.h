@@ -8,9 +8,9 @@
 #define CLOCK_VERSION		1
 #define CLOCK_MANUFACTURER	0		// Unknown manufacturer (not present in specs)
 
-#define CLOCK_INC_INT_0		1
-#define CLOCK_INC_INT_1		2
-#define CLOCK_INC_INT_2		3
+#define CLOCK_INC_INT_0		0
+#define CLOCK_INC_INT_1		1
+#define CLOCK_INC_INT_2		2
 
 typedef struct _generic_clock_t
 {
