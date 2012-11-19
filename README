@@ -25,6 +25,11 @@ Terminal 'dcpu16 parameters ram_file'.
 NOTE:
 When running in normal mode (not debug mode), the emulator will run forever and it is hard to see the results of your program.
 
+EXTRA OPCODES:
+
+0x18 - Breakpoint. Let's you explore the CPU state and then continue. Interrupts will be ignored when
+	the DCPU is on a breakpoint.
+
 USING THIS EMULATOR AS A CORE IN YOUR OWN PROJECTS (I.E. GUI EMULATORS):
 1. Change MAIN variable in Makefile and provide your own C file with a main function.
 2. Optionally set the ADDITIONAL_CFILES and ADDITIONAL_CFLAGS in Makefile.

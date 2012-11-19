@@ -44,38 +44,40 @@ inline DCPU16_WORD dcpu16_get(dcpu16_t *computer, DCPU16_WORD *where)
 /* Adds an interrupt to the queue. It's okay to call this function from different threads, it's supposed to be thread safe. */
 void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_interrupt) 
 {
-	// Lock the interrupt queue mutex
-	pthread_mutex_lock(&computer->interrupt_queue_mutex);
+	if(!computer->on_breakpoint) {
+		// Lock the interrupt queue mutex
+		pthread_mutex_lock(&computer->interrupt_queue_mutex);
 
-	// Incoming hardware interrupts are ignored if IA is 0, software interrupts are still queued
-	if(dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]) || software_interrupt) {
-		if(computer->interrupt_queue) {
-			if(computer->interrupt_queue_length == DCPU16_MAX_INTERRUPT_QUEUE_LENGTH) {
-				// Set computer on fire
-				PRINTF("COMPUTER IS ON FIRE!");
+		// Incoming hardware interrupts are ignored if IA is 0, software interrupts are still queued
+		if(dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_IA]) || software_interrupt) {
+			if(computer->interrupt_queue) {
+				if(computer->interrupt_queue_length == DCPU16_MAX_INTERRUPT_QUEUE_LENGTH) {
+					// Set computer on fire
+					PRINTF("COMPUTER IS ON FIRE!");
+				} else {
+					dcpu16_queued_interrupt_t *interrupt = malloc(sizeof(dcpu16_queued_interrupt_t));
+					interrupt->message = message;
+					interrupt->next = 0;
+
+					computer->interrupt_queue_end->next = interrupt;
+					computer->interrupt_queue_end = interrupt;
+					computer->interrupt_queue_length++;
+				}
+		
 			} else {
 				dcpu16_queued_interrupt_t *interrupt = malloc(sizeof(dcpu16_queued_interrupt_t));
 				interrupt->message = message;
 				interrupt->next = 0;
 
-				computer->interrupt_queue_end->next = interrupt;
+				computer->interrupt_queue = interrupt;
 				computer->interrupt_queue_end = interrupt;
 				computer->interrupt_queue_length++;
 			}
-		
-		} else {
-			dcpu16_queued_interrupt_t *interrupt = malloc(sizeof(dcpu16_queued_interrupt_t));
-			interrupt->message = message;
-			interrupt->next = 0;
-
-			computer->interrupt_queue = interrupt;
-			computer->interrupt_queue_end = interrupt;
-			computer->interrupt_queue_length++;
 		}
-	}
 
-	// Unock the interrupt queue mutex
-	pthread_mutex_unlock(&computer->interrupt_queue_mutex);
+		// Unock the interrupt queue mutex
+		pthread_mutex_unlock(&computer->interrupt_queue_mutex);
+	}
 }
 
 /* Checks the queue and handles the interrupt if there is one. */
@@ -702,7 +704,10 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			dcpu16_set(computer, &computer->registers[DCPU16_INDEX_REG_J], dcpu16_get(computer, &computer->registers[DCPU16_INDEX_REG_J]) - 1);
 
 			break;
-
+		case DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT:
+			if(computer->allow_breakpoints)
+				computer->on_breakpoint = 1;
+			break;
 		};
 	}
 
@@ -761,6 +766,7 @@ void dcpu16_init(dcpu16_t *computer)
 {
 	memset(computer, 0 , sizeof(*computer));
 	computer->trigger_interrupts = 1;
+	computer->allow_breakpoints = 1;
 }
 
 /* Loads a program into the RAM, returns true on success.
@@ -847,6 +853,8 @@ static char dcpu16_explore_state(dcpu16_t *computer)
 
 void dcpu16_run_debug(dcpu16_t *computer)
 {
+	computer->allow_breakpoints = 0;
+
 	PRINTF("DCPU16 emulator now running in debug mode\n"
 		"\tType 's' to execute the next instruction\n"
 		"\tType 'r' to print the contents of the registers\n"
@@ -945,6 +953,30 @@ void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 		// Profiling
 		if (computer->profiling.enabled != 0)
 			dcpu16_profiler_step(computer);
+
+		// Are we on a breakpoint?
+		if(computer->on_breakpoint == 1) {
+			// Let the user explore the state
+			PRINTF("\nBREAKPOINT DETECTED\nYou can now explore the state of the machine\n"
+			"\tType 'r' to print the contents of the registers\n"
+			"\tType 'd' to display what's in the RAM\n"
+			"\tType 'c' to continue execution\n"
+		       	"\tType 'q' to quit\n\n");
+
+			char c = 0;
+			while(c == 0) {
+				c = dcpu16_explore_state(computer);
+			}
+
+			if(c == 'q') {
+				computer->running = 0;
+				return;
+			} else if(c == 'c') {
+				computer->on_breakpoint = 0;
+				printf("CONTINUING EXECUTION\n\n");
+			}
+
+		}
 	}
 
 	PRINTF("Emulator halted\n\n");

@@ -32,7 +32,7 @@ typedef signed short DCPU16_WORD_SIGNED;
 #define DCPU16_OPCODE_IFA			0x15
 #define DCPU16_OPCODE_IFL			0x16
 #define DCPU16_OPCODE_IFU			0x17
-// 0x18 unused
+#define DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT	0x18
 // 0x19 unused
 #define DCPU16_OPCODE_ADX			0x1A
 #define DCPU16_OPCODE_SBX			0x1B
@@ -177,6 +177,10 @@ typedef struct _dcpu16_t
 
 	// Determines if the dcpu16 should be stopped or not
 	volatile char running;
+
+	// Determines if the dcpu16 is on a breakpoint
+	char on_breakpoint;
+	char allow_breakpoints;
 } dcpu16_t;
 
 /* Declaration of "public" functions */
