@@ -710,8 +710,6 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			break;
 		};
 	}
-
-
 	// Call the PC callback
 	dcpu16_pc_callback(computer);
 
@@ -950,10 +948,6 @@ void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 			
 		}
 
-		// Profiling
-		if (computer->profiling.enabled != 0)
-			dcpu16_profiler_step(computer);
-
 		// Are we on a breakpoint?
 		if(computer->on_breakpoint == 1) {
 			// Let the user explore the state
@@ -964,7 +958,7 @@ void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 		       	"\tType 'q' to quit\n\n");
 
 			char c = 0;
-			while(c == 0) {
+			while(c != 'q' && c != 'c') {
 				c = dcpu16_explore_state(computer);
 			}
 
@@ -977,6 +971,10 @@ void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 			}
 
 		}
+
+		// Profiling
+		if (computer->profiling.enabled != 0)
+			dcpu16_profiler_step(computer);
 	}
 
 	PRINTF("Emulator halted\n\n");
