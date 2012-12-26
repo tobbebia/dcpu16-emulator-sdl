@@ -251,10 +251,14 @@ static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
 		dcpu16_get_pointer(computer, b, 0, &b_word, 0, 1);
 	} else {
-		char a = (w >> 10) & 0x3F;
+		char o = (w >> 5) & 0x1F;
 
-		DCPU16_WORD *a_word;
-		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
+		if(o != DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT) {	// Only run get_pointer if this is is not a breakpoint opcode
+			char a = (w >> 10) & 0x3F;
+
+			DCPU16_WORD *a_word;
+			dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
+		}
 	}
 
 	if(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU) {
