@@ -53,7 +53,7 @@ void dcpu16_interrupt(dcpu16_t *computer, DCPU16_WORD message, char software_int
 			if(computer->interrupt_queue) {
 				if(computer->interrupt_queue_length == DCPU16_MAX_INTERRUPT_QUEUE_LENGTH) {
 					// Set computer on fire
-					PRINTF("COMPUTER IS ON FIRE!");
+					PRINTF("COMPUTER IS ON FIRE!\n");
 				} else {
 					dcpu16_queued_interrupt_t *interrupt = malloc(sizeof(dcpu16_queued_interrupt_t));
 					interrupt->message = message;
@@ -610,9 +610,6 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
-			
-			printf("IFE\n");
-
 
 			break;
 		case DCPU16_OPCODE_IFN:
