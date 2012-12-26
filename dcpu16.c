@@ -610,6 +610,9 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
 			}
+			
+			printf("IFE\n");
+
 
 			break;
 		case DCPU16_OPCODE_IFN:
@@ -625,7 +628,10 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		case DCPU16_OPCODE_IFG:
 			cycles += 2;
 
-			if(dcpu16_get(computer, b_word) <= dcpu16_get(computer, a_word))
+			a_val = dcpu16_get(computer, a_word);
+			b_val = dcpu16_get(computer, b_word);
+
+			if(b_val <= a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -635,7 +641,10 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		case DCPU16_OPCODE_IFA:
 			cycles += 2;
 
-			if((DCPU16_WORD_SIGNED) dcpu16_get(computer, b_word) <= (DCPU16_WORD_SIGNED)dcpu16_get(computer, a_word))
+			a_val = dcpu16_get(computer, a_word);
+			b_val = dcpu16_get(computer, b_word);
+
+			if((DCPU16_WORD_SIGNED) b_val <= (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -645,7 +654,10 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		case DCPU16_OPCODE_IFL:
 			cycles += 2;
 
-			if(dcpu16_get(computer, b_word) >= dcpu16_get(computer, a_word))
+			a_val = dcpu16_get(computer, a_word);
+			b_val = dcpu16_get(computer, b_word);
+
+			if(b_val >= a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -654,8 +666,12 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			break;
 		case DCPU16_OPCODE_IFU:
 			cycles += 2;
+			
+			a_val = dcpu16_get(computer, a_word);
+			b_val = dcpu16_get(computer, b_word);
 
-			if((DCPU16_WORD_SIGNED) dcpu16_get(computer, b_word) >= (DCPU16_WORD_SIGNED)dcpu16_get(computer, a_word))
+
+			if((DCPU16_WORD_SIGNED) b_val >= (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
