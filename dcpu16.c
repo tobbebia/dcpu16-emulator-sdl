@@ -628,7 +628,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if(b_val <= a_val)
+			if(b_val > a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -641,7 +641,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if((DCPU16_WORD_SIGNED) b_val <= (DCPU16_WORD_SIGNED) a_val)
+			if((DCPU16_WORD_SIGNED) b_val > (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -654,7 +654,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if(b_val >= a_val)
+			if(b_val < a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -668,7 +668,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			b_val = dcpu16_get(computer, b_word);
 
 
-			if((DCPU16_WORD_SIGNED) b_val >= (DCPU16_WORD_SIGNED) a_val)
+			if((DCPU16_WORD_SIGNED) b_val < (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
