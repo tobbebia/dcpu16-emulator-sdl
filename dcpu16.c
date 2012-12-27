@@ -118,9 +118,6 @@ void dcpu16_trigger_interrupt(dcpu16_t *computer)
 				// Disable interrupt triggering until this interrupt returns
 				computer->trigger_interrupts = 0;
 
-				// PRINT
-				PRINTF("triggering interrupt, ia: %x, message: %x\n", computer->registers[DCPU16_INDEX_REG_IA], to_remove->message);
-
 				// Free the removed interrupt
 				free(to_remove);
 				computer->interrupt_queue_length--;
