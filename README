@@ -1,6 +1,6 @@
 This is an emulator for the DCPU16 CPU of Notch's new game 0x10c (link: 0x10.com).
 Supports DCPU16 according to specification version 1.7 released by Notch.
-Project source code can be found at: https://github.com/tobbebia/dcpu16-emulator
+Project source code can be found at: https://github.com/tobbebia/dcpu16-emulator and https://github.com/tobbebia/dcpu16-emulator-sdl
 Collaborators: tobbebia, skyfell
 ----------------------------------------------------------------------------------
 
@@ -18,9 +18,10 @@ Terminal 'dcpu16 parameters ram_file'.
 		<file>	file which gets loaded to ram
 
 	EXAMPLES:
-		dcpu16 -d -b notch_program.bin
-		dcpu16 my_program.dat
-		dcpu16 -b my_program.bin
+		dcpu16sdl -bl AtlasOS.bin
+		dcpu16sdl 3d.hex
+		dcpu16sdl -p 3d.hex
+		dcpu16sdl -d -bl my_program.bin
 
 NOTE:
 When running in normal mode (not debug mode), the emulator will run forever and it is hard to see the results of your program.
