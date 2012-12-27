@@ -248,17 +248,17 @@ static int dcpu16_skip_next_instruction(dcpu16_t *computer)
 
 		DCPU16_WORD *b_word;
 		DCPU16_WORD *a_word;
-		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
-		dcpu16_get_pointer(computer, b, 0, &b_word, 0, 1);
+
+		if(opcode != DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT) {	// Only run get_pointer if this is is not a breakpoint opcode
+			dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
+			dcpu16_get_pointer(computer, b, 0, &b_word, 0, 1);
+		}
 	} else {
 		char o = (w >> 5) & 0x1F;
+		char a = (w >> 10) & 0x3F;
 
-		if(o != DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT) {	// Only run get_pointer if this is is not a breakpoint opcode
-			char a = (w >> 10) & 0x3F;
-
-			DCPU16_WORD *a_word;
-			dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
-		}
+		DCPU16_WORD *a_word;
+		dcpu16_get_pointer(computer, a, 0, &a_word, 1, 1);
 	}
 
 	if(opcode >= DCPU16_OPCODE_IFB && opcode <= DCPU16_OPCODE_IFU) {
@@ -406,14 +406,19 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 		// Get pointer to A and B
 		DCPU16_WORD *a_word;
 		DCPU16_WORD *b_word;
-		cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1, 0);
-		cycles += dcpu16_get_pointer(computer, b, &b_literal_tmp, &b_word, 0, 0);
 
-		// Give up if illegal instruction detected (trying set a literal value)
-		char b_literal = dcpu16_is_literal(b);
+		if(opcode != DCPU16_OPCODE_UNOFFICIAL_BREAKPOINT) {
+			cycles += dcpu16_get_pointer(computer, a, &a_literal_tmp, &a_word, 1, 0);
+			cycles += dcpu16_get_pointer(computer, b, &b_literal_tmp, &b_word, 0, 0);
 
-		if(b_literal && ((opcode >= DCPU16_OPCODE_SET && opcode <= DCPU16_OPCODE_SHL) || (opcode >= DCPU16_OPCODE_ADX && opcode <= DCPU16_OPCODE_SBX) || (opcode >= DCPU16_OPCODE_STI || opcode <= DCPU16_OPCODE_STD))) 
-			return 0; // TODO: find out if it is legal to return 0 cycles in this case.
+			// Give up if illegal instruction detected (trying set a literal value)
+			char b_literal = dcpu16_is_literal(b);
+
+			if(b_literal && ((opcode >= DCPU16_OPCODE_SET && opcode <= DCPU16_OPCODE_SHL) || (opcode >= DCPU16_OPCODE_ADX && opcode <= DCPU16_OPCODE_SBX) || (opcode >= DCPU16_OPCODE_STI && opcode <= DCPU16_OPCODE_STD))) {
+				printf("ILLEGAL INSTRUCTION DETECTED: opcode %x, a %x, b %x\n", opcode, a, b);
+				return 0; // TODO: find out if it is legal to return 0 cycles in this case.
+			}
+		}
 
 		// Variables for use in the switch statement
 		DCPU16_WORD a_val = 0;
@@ -628,7 +633,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if(b_val > a_val)
+			if(b_val <= a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -641,7 +646,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if((DCPU16_WORD_SIGNED) b_val > (DCPU16_WORD_SIGNED) a_val)
+			if((DCPU16_WORD_SIGNED) b_val <= (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -654,7 +659,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			a_val = dcpu16_get(computer, a_word);
 			b_val = dcpu16_get(computer, b_word);
 
-			if(b_val < a_val)
+			if(b_val >= a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -668,7 +673,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			b_val = dcpu16_get(computer, b_word);
 
 
-			if((DCPU16_WORD_SIGNED) b_val < (DCPU16_WORD_SIGNED) a_val)
+			if((DCPU16_WORD_SIGNED) b_val >= (DCPU16_WORD_SIGNED) a_val)
 			{
 				cycles += dcpu16_skip_next_instruction(computer);
 				cycles++;
@@ -727,6 +732,7 @@ unsigned char dcpu16_step(dcpu16_t *computer)
 			break;
 		};
 	}
+
 	// Call the PC callback
 	dcpu16_pc_callback(computer);
 
