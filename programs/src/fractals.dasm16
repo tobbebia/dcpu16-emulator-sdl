@@ -1,0 +1,349 @@
+; CONTROLS:
+; ---------
+; W, A, S, D: Move viewport
+; Q, E:       Zoom in/out
+; Comma, Dot: Decrease/increase number of iterations
+; I, J, K, L: Move parameter
+; 1, 2:       Julia/Mandelbrot mode
+ 
+; find out hardware map
+HWN I
+:query_loop
+SUB I, 1
+HWQ I
+IFE B, 0x7349
+  IFE A, 0xf615
+    SET [monitor_n], I
+IFE B, 0x30cf
+  IFE A, 0x7406
+    SET [keyboard_n], I
+IFE B, 0x12d0
+  IFE A, 0xb402
+    SET [clock_n], I
+IFN I, 0
+  SET PC, query_loop
+
+; set up monitor
+SET A, 0
+SET B, 0x8000
+HWI [monitor_n]
+SET A, 1
+SET B, 0x9000
+HWI [monitor_n]
+; blue border
+SET A, 3
+SET B, 0x1
+HWI [monitor_n]
+
+; enable keyboard interrupts
+SET A, 3
+SET B, 1
+HWI [keyboard_n]
+
+; make font
+SET I, 0
+:font_loop
+SET A, I
+SET C, 0
+SET J, 8
+:bit_loop
+SHL C, 2
+IFC A, 0x80
+  SET PC, bit_loop_it
+BOR C, 0x3
+:bit_loop_it
+SHL A, 1
+SUB J, 1
+IFG J, 0
+  SET PC, bit_loop
+SET A, C
+AND C, 0xff
+SET B, C
+SHL C, 8
+BOR B, C
+SET J, I
+SHL J, 1
+SET [0x9000+J], B
+SHR A, 8
+SET B, A
+SHL A, 8
+BOR B, A
+SET [0x9001+J], B
+ADD I, 1
+IFL I, 0x80
+  SET PC, font_loop
+
+; buffer location
+SET Z, 0x8000
+
+; enable interrupts
+IAS int_handler
+
+:main
+; MAIN PART
+; change border
+SET A, 3
+SET B, 0x9
+HWI [monitor_n]
+
+SET J, 0
+:loop_y
+; clear pixels in the current row
+IFB J, 0x0003
+  SET PC, loop_clear_row_end
+IAQ 1
+SET PUSH, J
+SHL J, 3
+ADD J, 0x8000
+:loop_clear_row
+SET [J], 0x0000
+ADD J, 1
+IFB J, 0x001f
+  SET PC, loop_clear_row
+SET J, POP
+IAQ 0
+:loop_clear_row_end
+SET I, 0
+:loop_x
+
+; at this point (I,J) are the pixel coordinates
+SET X, I
+SUB X, 32
+SET Y, 24
+SUB Y, J
+
+IAQ 1
+SET PUSH, I
+SET PUSH, J
+
+SHL X, [zoom_level]
+SHL Y, [zoom_level]
+ADD X, [pos_x]
+ADD Y, [pos_y]
+
+SET I, X
+SET J, Y
+
+SET C, 0
+:loop_it
+; if(X^2 + Y^2 > 2.0) then don't draw pixel
+SET A, X
+MLI A, A
+SET Z, EX
+SHR A, 7
+SHL Z, 9
+BOR A, Z
+SET B, Y
+MLI B, B
+SHR B, 7
+SHL Z, 9
+BOR B, Z
+ADD A, B
+IFG A, 256
+  SET PC, loop_cont
+;IFA Y, X
+;  SET PC, l1
+;; X > Y
+;SET A, Y
+;ASR A, 1
+;ADD A, X
+;SET PC, l2
+;:l1
+;; Y > X
+;SET A, X
+;ASR A, 1
+;ADD A, Y
+;:l2
+;IFA A, 128
+;  SET PC, loop_cont
+; A = 2*X*Y
+SET A, X
+MLI A, Y
+ADD A, 32
+ASR A, 6
+; X = X^2 - Y^2
+MLI X, X
+ADD X, 64
+ASR X, 7
+MLI Y, Y
+ADD Y, 64
+ASR Y, 7
+SUB X, Y
+; Y = A
+SET Y, A
+; X += x_const
+; Y += y_const
+IFE [mode], 1
+  SET PC, const_mandelbrot
+ADD X, [param_x]
+ADD Y, [param_y]
+SET PC, const_end
+:const_mandelbrot
+ADD X, I
+ADD Y, J
+:const_end
+
+ADD C, 1
+IFL C, [iters]
+  SET PC, loop_it
+
+SET J, POP
+SET I, POP
+JSR putpixel
+SET PC, loop_nextpixel
+
+:loop_cont
+SET J, POP
+SET I, POP
+IAQ 0
+
+:loop_nextpixel
+ADD I, 1
+IFL I, 64
+  SET PC, loop_x
+ADD J, 1
+IFL J, 48
+  SET PC, loop_y
+
+; blue border
+SET A, 3
+SET B, 0x1
+HWI [monitor_n]
+IAQ 0
+SUB PC, 1
+
+
+:int_handler
+SET A, 2
+SET B, 0x90
+HWI [keyboard_n]
+SET B, 1  ; parameter delta
+IFE C, 1
+  SET B, 16
+; query shift
+SET A, 1
+HWI [keyboard_n]
+SET A, 4  ; position delta
+SHL A, [zoom_level]
+IFE C, 0
+  SET PC, int_handler_end
+IFE C, 0x61  ; a
+  SUB [pos_x], A
+IFE C, 0x64  ; d
+  ADD [pos_x], A
+IFE C, 0x77  ; w
+  ADD [pos_y], A
+IFE C, 0x73  ; s
+  SUB [pos_y], A
+IFE C, 0x71  ; q
+  ADD [zoom_level], 1
+IFA [zoom_level], 4
+  SET [zoom_level], 4
+IFE C, 0x65  ; e
+  SUB [zoom_level], 1
+IFU [zoom_level], 0
+  SET [zoom_level], 0
+IFE C, 0x2c  ; ,
+  SHR [iters], 1
+IFL [iters], 1
+  SET [iters], 1
+IFE C, 0x2e  ; .
+  SHL [iters], 1
+IFE C, 0x6a  ; j
+  SUB [param_x], B
+IFE C, 0x6c  ; l
+  ADD [param_x], B
+IFE C, 0x69  ; i
+  ADD [param_y], B
+IFE C, 0x6b  ; k
+  SUB [param_y], B
+IFE C, 0x31  ; 1
+  SET [mode], 0
+IFE C, 0x32  ; 2
+  SET [mode], 1
+SET A, POP
+SET A, POP
+SET PUSH, main
+SET PUSH, 0
+:int_handler_end
+RFI 0
+
+
+; puts a pixel to location (I,J)
+:putpixel
+SET PUSH, A
+SET PUSH, B
+SET PUSH, I
+SET PUSH, J
+SET PUSH, X
+SET PUSH, Y
+SET PUSH, Z
+SET Z, 0x8000
+; character coords:
+SET X, I
+SET Y, J
+SHR X, 1
+SHR Y, 2
+SHL Y, 5
+ADD X, Y
+ADD Z, X
+; find out character index
+AND I, 0x1
+AND J, 0x3
+SET A, 1
+SHL A, J
+SHL I, 2
+SHL A, I
+
+SET B, [Z]
+BOR A, 0xf000
+IFB A, 0x80
+  SET PC, putpixel_haslastpixel
+SET PC, putpixel_nolastpixel
+:putpixel_haslastpixel
+IFC B, 0x0f00
+  XOR B, 0xff7f
+AND B, 0x0fff
+SET PC, putpixel_draw
+:putpixel_nolastpixel
+IFB B, 0x0f00
+  SET PC, putpixel_oldlastpixel
+BOR B, A
+SET PC, putpixel_draw
+:putpixel_oldlastpixel
+XOR A, 0xff7f
+AND B, A
+SET PC, putpixel_draw
+:putpixel_draw
+SET [Z], B
+SET Z, POP
+SET Y, POP
+SET X, POP
+SET J, POP
+SET I, POP
+SET B, POP
+SET A, POP
+SET PC, POP
+
+
+:monitor_n
+DAT 0
+:keyboard_n
+DAT 0
+:clock_n
+DAT 0
+
+:zoom_level
+DAT 3
+:pos_x
+DAT 0
+:pos_y
+DAT 0
+:param_x
+DAT 0
+:param_y
+DAT 0
+:iters
+DAT 1
+:mode  ; 0: julia, 1: mandelbrot
+DAT 0

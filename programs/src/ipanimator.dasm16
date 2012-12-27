@@ -1,0 +1,432 @@
+;        ___            ;
+;       /\  \           ;
+;       \:\  \          ;
+;       /::\__\         ;
+;    __/:/\/__/         ;
+;   /\/:/  /  ___       ;
+;   \::/__/  /\  \      ;
+;    \:\__\ /::\  \     ;
+;     \/__//:/\:\  \    ;
+;         /::\ \:\  \   ;
+;        /:/\:\ \:\__\  ;
+;        \/__\:\/:/  /  ;
+;             \::/  /   ;
+;              \/__/    ;
+;IP Animator v0.1
+;created by h3xtEr
+;WASD to control cursor
+;F to toggle paint
+
+hwn i						
+:map_hardware				
+	sub i, 1					
+	hwq i						
+	ife b, 0x7349 ;lem1802 id
+		ife a, 0xF615			
+			set [display], i
+    ife b, 0x30CF ;keyboard id
+		ife a, 0x7406
+			set [keyboard], i
+	ifn i, 0					
+		set pc, map_hardware
+
+:init_display
+	set a, 0
+	set b, 0x8000
+	hwi [display]
+
+jsr draw_title_line
+set j, 0xf400
+jsr add_cursor
+jsr modify_frame
+jsr draw_keyboard_guide
+
+:key_loop
+	ifn [playing], 0
+		jsr play_next_frame
+	ifn [counter], 0
+    	sub [counter], 1
+    ife [counter], 0
+		jsr draw_keyboard_guide
+	set a, 1
+    hwi [keyboard]
+    ife c, 0
+    	set pc, key_loop
+    ife c, 0x77;w
+    	jsr w_press
+    ife c, 0x61;a
+    	jsr a_press
+    ife c, 0x73;s
+    	jsr s_press
+    ife c, 0x64;d
+    	jsr d_press
+    ife c, 0x66;f
+    	jsr toggle
+    ife c, 0x70;p
+    	jsr previous_frame
+    ife c, 0x6e;n
+    	jsr next_frame
+    ife c, 0x20;space
+    	jsr toggle_playing
+    ife c, 0x6f;o
+    	jsr toggle_overlay
+    set pc, key_loop
+:draw_title_line
+	set i, 0
+:draw_title_line_loop
+	set a, [title+i]
+    bor a, 0xf000
+    set [0x8000+i], a
+    add i, 1
+    ifn [title+i], 0
+    	set pc, draw_title_line_loop
+    set pc, pop
+
+:draw_keyboard_guide
+	set j, 0xf400
+	jsr draw_w
+    jsr draw_a
+    jsr draw_s
+    jsr draw_d
+    jsr draw_f
+    jsr change_prev_back
+    jsr change_next_back
+    jsr change_overlay_back
+    jsr change_play_back
+    set pc, pop
+
+:draw_w;arg j as back
+	set a, 0x0057
+    bor a, j
+    set [0x80e1], a
+    set [counter], 1000
+    set pc, pop
+
+:draw_a
+	set a, 0x0041
+    bor a, j
+    set [0x8100], a
+    set [counter], 1000
+    set pc, pop
+
+:draw_s
+	set a, 0x0053
+    bor a, j
+    set [0x8101], a
+    set [counter], 1000
+    set pc, pop
+    
+:draw_d
+	set a, 0x0044
+    bor a, j
+    set [0x8102], a
+    set [counter], 1000
+    set pc, pop
+
+:draw_f
+	set a, 0x0046
+    bor a, j
+    set [0x8103], a
+    set [counter], 1000
+    set pc, pop
+
+:previous_frame
+	set j, 0xf200
+	jsr change_prev_back
+	ife [current_frame], 0
+    	set pc, pop
+    sub [current_frame], 1
+    set [last_cursor], [cursor]
+    sub [cursor], 0xa0
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+    
+:next_frame
+	set j, 0xf200
+	jsr change_next_back
+	add [current_frame], 1
+    ifg [current_frame], [total_frames]
+		jsr add_new_frame
+    set [last_cursor], [cursor]
+    add [cursor], 0xa0
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+
+:play_next_frame
+	set a, [current_frame]
+	set b, [total_frames]
+	ife a, b
+		set [current_frame], 0
+	ifn a, b
+		add [current_frame], 1
+	jsr modify_frame
+	set pc, pop
+	
+:toggle_playing
+	set j, 0xf200
+    jsr change_play_back
+	xor [playing], 1
+	ife [playing], 1
+		jsr start_playing
+	ifn [playing], 1
+		jsr stop_playing
+	set pc, pop
+:start_playing
+	set [overlay], 0
+	set a, [cursor]
+	sub [frame+a], 0xc
+	xor [frame+a], 0xff00
+	set pc, pop
+:stop_playing
+	set [overlay], 1
+	add [frame], 0xc
+	xor [frame], 0xff00
+	set [current_frame], 0
+	set [cursor], 0
+	set [last_cursor], 0
+	jsr add_cursor
+    jsr modify_frame
+	set pc, pop
+	
+:toggle_overlay
+	set j, 0xf200
+	jsr change_overlay_back
+	xor [overlay], 1
+	jsr modify_frame
+	set pc, pop
+	
+:change_prev_back;prev background change sub, arg j as back
+	set i, 0
+:change_prev_back_loop
+	set a, [prev_text+i]
+    bor a, j
+    set [0x8028+i], a
+    add i, 1
+    ifn [prev_text+i], 0
+    	set pc, change_prev_back_loop
+    set [counter], 1000
+    set pc, pop
+
+:change_next_back;next background change sub, arg j as back
+	set i, 0
+:change_next_back_loop
+	set a, [next_text+i]
+    bor a, j
+    set [0x8032+i], a
+    add i, 1
+    ifn [next_text+i], 0
+    	set pc, change_next_back_loop
+    set [counter], 1000
+    set pc, pop
+
+:change_overlay_back
+	set i, 0
+:change_overlay_back_loop
+	set a, [overlay_text+i]
+    bor a, j
+    set [0x804c+i], a
+    add i, 1
+    ifn [overlay_text+i], 0
+    	set pc, change_overlay_back_loop
+    set [counter], 1000
+    set pc, pop
+    
+:change_play_back
+	set i, 0
+:change_play_back_loop
+	set a, [play_text+i]
+    bor a, j
+    set [0x8067+i], a
+    add i, 1
+    ifn [play_text+i], 0
+    	set pc, change_play_back_loop
+    set [counter], 1000
+    set pc, pop
+
+:add_cursor
+	set a, [last_cursor]
+    set b, [cursor]
+	sub [frame+a], 0xc
+    xor [frame+a], 0xff00
+    add [frame+b], 0xc
+    xor [frame+b], 0xff00
+    set pc, pop
+    
+:w_press
+	set j, 0xf200
+    jsr draw_w
+	set [last_cursor], [cursor]
+	set a, [current_frame]
+	mul a, 0xa0
+	set b, [cursor]
+	sub b, a
+	ifl b, 0x14
+    	add [cursor], 0x8c
+    ifg b, 0x13
+	    sub [cursor], 0x14
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+
+:a_press
+	set j, 0xf200
+    jsr draw_a
+	set [last_cursor], [cursor]
+	set a, [current_frame]
+	mul a, 0xa0
+	set b, [cursor]
+	sub b, a
+    mod b, 0x14
+    ife b, 0
+    	add [cursor], 0x13
+	ifn b, 0
+    	sub [cursor], 1
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+
+:s_press
+	set j, 0xf200
+    jsr draw_s
+	set [last_cursor], [cursor]
+    set a, [current_frame]
+	mul a, 0xa0
+	set b, [cursor]
+	sub b, a
+	ifg b, 0x8b
+    	sub [cursor], 0x8c
+    ifl b, 0x8c
+    	add [cursor], 0x14
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+
+:d_press
+	set j, 0xf200
+    jsr draw_d
+	set [last_cursor], [cursor]
+	set a, [current_frame]
+	mul a, 0xa0
+	set b, [cursor]
+	sub b, a
+    add b, 1
+    mod b, 0x14
+    ife b, 0
+    	sub [cursor], 0x13
+	ifn b, 0
+    	add [cursor], 1
+    jsr add_cursor
+    jsr modify_frame
+    set pc, pop
+    
+:toggle
+	set j, 0xf200
+    jsr draw_f
+	set a, [cursor]
+    xor [frame+a], 0xff00
+    jsr modify_frame
+	set pc, pop
+
+:modify_frame
+	set i, 0
+    set j, 0x8086
+    set x, [current_frame]
+    mul x, 0xa0
+:modify_frame_loop
+	set y, x
+    add y, i
+	set a, [frame+y]
+    set [j], a
+    add i, 1
+	add j, 1
+	set c, i
+    mod c, 0x14
+	ife c, 0
+    	add j, 0xc
+    set c, i
+    mod c, 0xa0
+    ifn c, 0
+    	set pc, modify_frame_loop
+    ife [overlay], 1
+    	jsr draw_overlay
+    set pc, pop
+
+:draw_overlay
+	ife [current_frame], 0
+		set pc, pop
+	set i, 0
+    set j, 0x8086
+    set x, [current_frame]
+    sub x, 1
+    mul x, 0xa0
+:draw_overlay_loop
+	set y, x
+    add y, i
+	set a, [frame+y]
+	xor a, 0xb000
+	set b, [current_frame]
+	mul b, 0xa0
+	add b, i
+	ifn a, 0x401f
+		ife [frame+b], 0xf01f
+    		set [j], a
+    add i, 1
+	add j, 1
+	set c, i
+    mod c, 0x14
+	ife c, 0
+    	add j, 0xc
+    set c, i
+    mod c, 0xa0
+    ifn c, 0
+    	set pc, draw_overlay_loop
+    set pc, pop
+
+:add_new_frame
+	set i, 0
+:add_new_frame_loop
+	add i, 1
+	ifn [frame+i], 0
+    	set pc, add_new_frame_loop
+	set j, 0xa0
+:add_frame_pixels
+	set [frame+i], 0xf01f
+    add i, 1
+    sub j, 1
+    ifn j, 0
+    	set pc, add_frame_pixels
+    set [frame+i], 0
+    add [total_frames], 1
+    set pc, pop
+    
+    
+:title
+dat "     INTERPLANETARY ANIMATOR    ", 0
+:prev_text
+dat "[P]REV", 0
+:next_text
+dat "[N]EXT", 0
+:overlay_text
+dat "[O]VERLAY", 0
+:play_text
+dat "[SPACE] PLAY/PAUSE", 0
+:display dat 0xdead	
+:keyboard dat 0xdead
+:cursor
+dat 0
+:last_cursor
+dat 0
+:counter
+dat 0
+:current_frame
+dat 0
+:total_frames
+dat 0
+:playing
+dat 0
+:overlay
+dat 1
+:frame
+dat 0x0f2b, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0xf01f, 0
