@@ -243,7 +243,7 @@ void sdl_handle_events()
 				} else if(event.key.keysym.sym == SDLK_DELETE) {
 					keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 1);
 					keyboard_key_typed(keyboard_device, KEYBOARD_KEY_DELETE);
-				} else if(event.key.keysym.unicode > 0x20 && event.key.keysym.unicode <= 0x7F) {
+				} else if(event.key.keysym.unicode >= 0x20 && event.key.keysym.unicode <= 0x7F) {
 					keyboard_update_key_state(keyboard_device, event.key.keysym.unicode, 1);
 					keyboard_key_typed(keyboard_device, event.key.keysym.unicode);
 				} else if(event.key.keysym.sym == SDLK_UP) {
@@ -278,7 +278,7 @@ void sdl_handle_events()
 					keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_INSERT, 0);
 				} else if(event.key.keysym.sym == SDLK_DELETE) {
 					keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_DELETE, 0);
-				} else if(event.key.keysym.unicode > 0x20 && event.key.keysym.unicode <= 0x7F) {
+				} else if(event.key.keysym.unicode >= 0x20 && event.key.keysym.unicode <= 0x7F) {
 					keyboard_update_key_state(keyboard_device, event.key.keysym.unicode, 0);
 				} else if(event.key.keysym.sym == SDLK_UP) {
 					keyboard_update_key_state(keyboard_device, KEYBOARD_KEY_ARROW_UP, 0);
