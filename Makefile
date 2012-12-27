@@ -1,6 +1,6 @@
 CC=gcc
 LD=ld
-CFLAGS=-std=c99 -O3 -g -Wno-unused-result -Iinclude
+CFLAGS=-std=c99 -O3 -g -Wno-unused-result -Iinclude -D_POSIX_C_SOURCE=199309
 
 # Hardware modules path
 generic_clock		= hardware/generic_clock/clock.o
@@ -13,7 +13,7 @@ MAIN=main.c
 HARDWARE=$(LEM1802) $(generic_keyboard) $(generic_clock)
 ADDITIONAL_CFILES=
 ADDITIONAL_CFLAGS=
-ADDITIONAL_LIBS=-lSDL
+ADDITIONAL_LIBS=-lSDL -lrt
 OUTPUT_BINARY_NAME=dcpu16sdl
 
 
@@ -21,7 +21,7 @@ all: dcpu16
 
 dcpu16: dcpu16.c
 	mkdir -p bin
-	$(CC) $(CFLAGS) $(ADDITIONAL_CFLAGS) $(HARDWARE) dcpu16.c $(MAIN) $(ADDITIONAL_CFILES) -o bin/$(OUTPUT_BINARY_NAME) $(ADDITIONAL_LIBS)
+	$(CC) $(CFLAGS) $(ADDITIONAL_CFLAGS) $(HARDWARE) dcpu16.c $(MAIN) $(ADDITIONAL_CFILES) $(ADDITIONAL_LIBS) -o bin/$(OUTPUT_BINARY_NAME) 
 
 clean:
 	rm bin/dcpu16

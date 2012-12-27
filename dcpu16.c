@@ -912,9 +912,9 @@ static void dcpu16_profiler_step(dcpu16_t *computer)
 		double sample_elapsed = now - computer->profiling.sample_time;
 		if (sample_elapsed >= computer->profiling.sample_frequency) {
 			// Time since last sample was taken
-			double instructions_per_second = (double)computer->profiling.instruction_count / sample_elapsed;
-			
-			PRINTF("[ PROFILE ]\nSample Duration: %.3lf\nInstructions: %u\nMHz: %.2lf\n-----------\n",
+			double instructions_per_second = (double)computer->profiling.instruction_count / sample_elapsed;	
+
+			PRINTF("[ PROFILE ]\nSample Duration: %.3lf\nInstructions: %u\nMHz: %.6lf\n-----------\n",
 				   sample_elapsed, computer->profiling.instruction_count, (instructions_per_second / 1000000.0));
 			
 			// Reset instruction count
@@ -926,47 +926,20 @@ static void dcpu16_profiler_step(dcpu16_t *computer)
 	}
 }
 
+// NOTE: hertz is ignored for now
 void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 {
 	computer->running = 1;
 	PRINTF("DCPU16 emulator now running\n");
 
-	// Clock frequency capped?
-	char capped = 0;
-	unsigned int us_per_instruction = 0;
-	
-	if(hertz > 0) {
-		capped = 1;
-		us_per_instruction = (unsigned int) (1000000.0f / hertz);
-	} 
-
 	while(computer->running) {
-		// Get start time
-		struct timeval tv;
-		unsigned int start_time;
-		unsigned int end_time;
-
-		if(capped) {
-			gettimeofday(&tv, NULL);
-			start_time = (unsigned int) tv.tv_sec * 1000000 + tv.tv_usec;
-		}
-
 		// Step and trigger interrupts
 		dcpu16_step(computer);
 		dcpu16_trigger_interrupt(computer);
 
-		// Get end time
-		if(capped) {
-			gettimeofday(&tv, NULL);
-			end_time = (unsigned int) tv.tv_sec * 1000000 + tv.tv_usec;
-
-			// Sleep?
-			int to_sleep = us_per_instruction - (end_time - start_time);
-			
-			if(to_sleep > 0)
-				usleep(to_sleep);
-			
-		}
+		// Profiling
+		if (computer->profiling.enabled != 0)
+			dcpu16_profiler_step(computer);
 
 		// Are we on a breakpoint?
 		if(computer->on_breakpoint == 1) {
@@ -992,9 +965,6 @@ void dcpu16_run(dcpu16_t *computer, unsigned int hertz)
 
 		}
 
-		// Profiling
-		if (computer->profiling.enabled != 0)
-			dcpu16_profiler_step(computer);
 	}
 
 	PRINTF("Emulator halted\n\n");

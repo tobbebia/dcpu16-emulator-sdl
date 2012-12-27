@@ -17,7 +17,6 @@ volatile char running = 1;
 // SDL
 SDL_Surface *screen;
 
-
 // Emulator
 pthread_t emulator_thread;
 dcpu16_t computerInRAM;
@@ -47,6 +46,9 @@ int SDL_setup()
 		printf("SDL_SetVideoMode failed");
 		return -1;
 	}
+
+	// Set window title
+	SDL_WM_SetCaption("lem1802", "lem1802");
 
 	// Needed to get ascii code from input
 	SDL_EnableUNICODE(1);
@@ -317,7 +319,7 @@ void emulator_thread_func(void * arg)
 	if(*debug_mode)
 		dcpu16_run_debug(computer);
 	else
-		dcpu16_run(computer, 1000000);
+		dcpu16_run(computer, 0);
 
 	running = 0;
 	pthread_exit(0);
